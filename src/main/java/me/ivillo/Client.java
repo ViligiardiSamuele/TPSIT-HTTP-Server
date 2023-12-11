@@ -6,8 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
@@ -15,8 +15,8 @@ public class Client extends Thread{
 
     private Boolean enable;
     private Socket socket;
-    BufferedReader in;
-    DataOutputStream out;
+    private BufferedReader in;
+    private DataOutputStream out;
     private List<String> buffer;
 
     public Client(Socket socket){
@@ -35,7 +35,7 @@ public class Client extends Thread{
     public void run() {
         String input;
         try {
-            while(enable){
+            while(enable && in.ready()){
                 input = in.readLine();
                 buffer.add(input);
                 if(input.equals(""))
@@ -53,31 +53,22 @@ public class Client extends Thread{
     private void execute(){
         String[] string0 = buffer.get(0).split("\\s+",0);
         File file = new File("htdocs" + string0[1]);
-        if(file.exists() && !file.isDirectory()) { 
-            System.out.println("Invio di: " + file.getPath());
-            try {
-                out.writeBytes("HTTP/1.1 200 OK\n");
-                out.writeBytes("Date: " + new Date().toString() + "\n");
-                out.writeBytes("Server: meucci-server\n");
-                out.writeBytes("Content-Type: text/plain; charset=UTF-8\n");
-                out.writeBytes("Content-Length: " + file.length() + "\n");
-                out.writeBytes("\n");
-                Scanner fileReader = new Scanner(file);
-                while(fileReader.hasNextLine()){
-                    out.writeBytes(fileReader.nextLine() + "\n");
-                }
-                fileReader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        if(file.exists()){
+            if(file.isDirectory()){ //ERRORE PATH
+                System.out.println("Invio di: " + file.getPath() + "/index.html");
+                sendFile(new File(file.getPath() + "/index.html"), "text/html");
+            } else {
+                System.out.println("Invio di: " + file.getPath());
+                sendFile(file, "text/html");
             }
         } else {
             System.out.println("File non trovato: " + file.getPath());
-            String msg = "The resource was not found";
+            String msg = "<h1>>:(</h1>";
             try {
                 out.writeBytes("HTTP/1.1 404 Not Found\n");
-                out.writeBytes("Date: " + new Date().toString() + "\n");
+                out.writeBytes("Date: " + LocalDateTime.now().toString() + "\n");
                 out.writeBytes("Server: meucci-server\n");
-                out.writeBytes("Content-Type: text/plain; charset=UTF-8\n");
+                out.writeBytes("Content-Type: text/html; charset=UTF-8\n");
                 out.writeBytes("Content-Length: " + msg.length() + "\n");
                 out.writeBytes("\n");
                 out.writeBytes(msg + "\n");
@@ -85,6 +76,23 @@ public class Client extends Thread{
                 e.printStackTrace();
             }
         }
-        this.enable = false;
+    }
+
+    private void sendFile(File file, String type){
+        try {
+            out.writeBytes("HTTP/1.1 200 OK\n");
+            out.writeBytes("Date: " + LocalDateTime.now().toString() + "\n");
+            out.writeBytes("Server: meucci-server\n");
+            out.writeBytes("Content-Type: "+ type +"; charset=UTF-8\n");
+            out.writeBytes("Content-Length: " + file.length() + "\n");
+            out.writeBytes("\n");
+            Scanner fileReader = new Scanner(file);
+            while(fileReader.hasNextLine()){
+                out.writeBytes(fileReader.nextLine() + "\n");
+            }
+            fileReader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }    
     }
 }
