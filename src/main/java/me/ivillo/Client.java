@@ -11,7 +11,6 @@ import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class Client extends Thread {
 
@@ -38,7 +37,7 @@ public class Client extends Thread {
         String input;
         StringBuilder sb = new StringBuilder("-- From [" + socket.getPort() + "] -----\n");
         try {
-            while (enable && in.ready()) {
+            while (enable ) {
                 input = in.readLine();
                 buffer.add(input);
                 if (input.equals("")) {
@@ -46,6 +45,7 @@ public class Client extends Thread {
                     System.out.println(sb.append("-------------\n\n").toString());
                     sb.delete(0, sb.length());
                     sb.append("\n\n--" + socket.getPort() + "------\n");
+                    buffer.clear();
                 } else sb.append(input + "\n");
 
             }
@@ -63,15 +63,16 @@ public class Client extends Thread {
         File file = new File("htdocs" + string0[1]);
         if (file.exists()) {
             if (file.isDirectory()) {
-                System.out.println(socket.getPort() + ": Invio di: " + file.getPath() + "/index.html" + " (" + getContentType(file) + ")");
-                sendBinaryFile(out, new File(file.getPath() + "/index.html"));
+                file = new File(file.getPath() + "/index.html");
+                System.out.println(socket.getPort() + ": Invio di: " + file.getPath() + " (" + getContentType(file) + ")");
+                sendBinaryFile(out, file);
             } else {
                 System.out.println(socket.getPort() + ": Invio di: " + file.getPath() + " (" + getContentType(file) + ")");
                 sendBinaryFile(out, file);
             }
         } else {
             System.out.println("File non trovato: " + file.getPath());
-            String msg = "<h1>>:(</h1>";
+            String msg = "<h1>404 File non trovato</h1><p>>:(</p>";
             try {
                 out.writeBytes("HTTP/1.1 404 Not Found\n");
                 out.writeBytes("Date: " + LocalDateTime.now().toString() + "\n");
@@ -86,25 +87,7 @@ public class Client extends Thread {
         }
     }
 
-    private void sendFile(File file) {
-        try {
-            out.writeBytes("HTTP/1.1 200 OK\n");
-            out.writeBytes("Date: " + LocalDateTime.now().toString() + "\n");
-            out.writeBytes("Server: meucci-server\n");
-            out.writeBytes("Content-Type: " + getContentType(file) + "\n");
-            out.writeBytes("Content-Length: " + file.length() + "\n");
-            out.writeBytes("\n");
-            Scanner fileReader = new Scanner(file);
-            while (fileReader.hasNextLine()) {
-                out.writeBytes(fileReader.nextLine() + "\n");
-            }
-            fileReader.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private String getContentType(File f) {
+    private static String getContentType(File f) {
         String[] s = f.getName().split("\\.");
         String ext = s[s.length - 1];
         switch (ext) {
@@ -121,7 +104,7 @@ public class Client extends Thread {
 
     }
 
-    private void sendBinaryFile(DataOutputStream output, File file) throws IOException {
+    private static void sendBinaryFile(DataOutputStream output, File file) throws IOException {
         output.writeBytes("HTTP/1.1 200 OK\n");
         output.writeBytes("Content-Length: " + file.length() + "\n");
         output.writeBytes("Content-Type: " + getContentType(file) + "\n");
