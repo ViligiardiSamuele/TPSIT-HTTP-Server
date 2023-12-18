@@ -35,14 +35,14 @@ public class Client extends Thread {
     @Override
     public void run() {
         String input;
-        StringBuilder sb = new StringBuilder("-- From [" + socket.getPort() + "] -----\n");
+        StringBuilder sb = new StringBuilder("\n-- From [" + socket.getPort() + "] -----\n");
         try {
             while (enable ) {
                 input = in.readLine();
                 buffer.add(input);
                 if (input.equals("")) {
                     execute();
-                    System.out.println(sb.append("-------------\n\n").toString());
+                    System.out.println(sb.append("-------------\n").toString());
                     sb.delete(0, sb.length());
                     sb.append("\n\n--" + socket.getPort() + "------\n");
                     buffer.clear();
